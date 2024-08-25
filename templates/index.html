@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcribe Web Media</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+        }
+        #progress {
+            margin-top: 20px;
+            font-weight: bold;
+            white-space: pre-wrap; /* Keeps the line breaks */
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            white-space: pre-wrap; /* Keeps the line breaks */
+            max-height: 400px;
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+<body>
+    <h1>Transcribe Web Media</h1>
+    <p>Enter the URL of the media you want to transcribe:</p>
+    <input type="text" id="url-input" placeholder="Enter media URL" size="50">
+    <button onclick="transcribe()">Transcribe</button>
+
+    <div id="progress"></div>
+    <div id="result"></div>
+
+    <script>
+        function updateProgress(message) {
+            const progressDiv = document.getElementById('progress');
+            progressDiv.innerText += message + "\n";
+        }
+
+        function updateTranscript(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerText += message + "\n";
+        }
+
+        async function transcribe() {
+            const url = document.getElementById('url-input').value;
+            document.getElementById('progress').innerText = "";  // Clear previous progress
+            document.getElementById('result').innerText = "";  // Clear previous result
+            updateProgress("Starting transcription...");
+
+            const response = await fetch('/transcribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: url })
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let chunk;
+
+            while (!(chunk = await reader.read()).done) {
+                const text = decoder.decode(chunk.value, { stream: true });
+                updateTranscript(text);
+            }
+
+            updateProgress("Transcription complete.");
+        }
+    </script>
+</body>
+</html>

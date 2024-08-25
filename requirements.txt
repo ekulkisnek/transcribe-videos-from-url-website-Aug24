@@ -1,0 +1,8 @@
+flask
+beautifulsoup4
+requests
+selenium
+ffmpeg-python
+whisper
+torch
+numpy<=2.0.0
