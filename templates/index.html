@@ -4,45 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transcribe Web Media</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-        }
-        #progress {
-            margin-top: 20px;
-            font-weight: bold;
-            white-space: pre-wrap; /* Keeps the line breaks */
-        }
-        #result {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f4f4f4;
-            border: 1px solid #ddd;
-            white-space: pre-wrap; /* Keeps the line breaks */
-            max-height: 400px;
-            overflow-y: scroll;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Transcribe Web Media</h1>
-    <p>Enter the URL of the media you want to transcribe:</p>
-    <input type="text" id="url-input" placeholder="Enter media URL" size="50">
-    <button onclick="transcribe()">Transcribe</button>
+    <div class="container">
+        <h1>Transcribe Web Media</h1>
+        <p>Enter the URL of the media you want to transcribe:</p>
+        <input type="text" id="url-input" placeholder="Enter media URL" />
 
-    <div id="progress"></div>
-    <div id="result"></div>
+        <button onclick="transcribe()">Transcribe</button>
+
+        <div id="progress"></div>
+        <div id="result"></div>
+        <button id="copy-button" onclick="copyToClipboard()">Copy Transcription</button>
+    </div>
 
     <script>
         function updateProgress(message) {
             const progressDiv = document.getElementById('progress');
+            progressDiv.style.display = 'block';
             progressDiv.innerText += message + "\n";
         }
 
         function updateTranscript(message) {
             const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
             resultDiv.innerText += message + "\n";
         }
 
@@ -50,26 +36,52 @@
             const url = document.getElementById('url-input').value;
             document.getElementById('progress').innerText = "";  // Clear previous progress
             document.getElementById('result').innerText = "";  // Clear previous result
+            document.getElementById('progress').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('copy-button').style.display = 'none';
+
             updateProgress("Starting transcription...");
 
-            const response = await fetch('/transcribe', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url: url })
-            });
+            try {
+                const response = await fetch('/transcribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: url })
+                });
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let chunk;
+                if (!response.ok) {
+                    const errorMessage = await response.json();
+                    throw new Error(errorMessage.error || "Unknown error occurred");
+                }
 
-            while (!(chunk = await reader.read()).done) {
-                const text = decoder.decode(chunk.value, { stream: true });
-                updateTranscript(text);
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let chunk;
+
+                while (!(chunk = await reader.read()).done) {
+                    const text = decoder.decode(chunk.value, { stream: true });
+                    updateTranscript(text);
+                }
+
+                updateProgress("Transcription complete.");
+                document.getElementById('copy-button').style.display = 'block';
+
+            } catch (error) {
+                updateProgress(`Error: ${error.message}`);
+                console.error("Transcription error:", error);
             }
+        }
 
-            updateProgress("Transcription complete.");
+
+        function copyToClipboard() {
+            const resultText = document.getElementById('result').innerText;
+            navigator.clipboard.writeText(resultText).then(() => {
+                alert("Transcription copied to clipboard!");
+            }).catch(err => {
+                alert("Failed to copy text: " + err);
+            });
         }
     </script>
 </body>

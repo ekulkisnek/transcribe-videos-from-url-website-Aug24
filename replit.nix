@@ -1,6 +1,7 @@
 { pkgs }: {
   deps = [
     pkgs.geckodriver
-    pkgs.ffmpeg
+    pkgs.python39Full
+    pkgs.nodejs
   ];
 }
